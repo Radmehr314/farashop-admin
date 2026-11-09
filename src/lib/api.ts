@@ -1,6 +1,7 @@
 import type { AuthResponse, User } from './types'
 
 export const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5080').replace(/\/$/, '')
+export const STORE_URL = ((import.meta.env.VITE_STORE_URL as string | undefined) ?? 'http://localhost:3100').replace(/\/$/, '')
 
 const STORAGE_KEY = 'fs_admin_auth'
 

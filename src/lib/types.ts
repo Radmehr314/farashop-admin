@@ -12,6 +12,8 @@ export type User = {
   isBlocked: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+  username: string | null;
+  hasPassword: boolean;
 };
 
 export type AuthResponse = {

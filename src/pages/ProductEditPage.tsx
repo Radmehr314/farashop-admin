@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ImageUpload, Thumb } from '../components/ImageUpload'
 import { Badge, Button, Card, Checkbox, ErrorText, Field, Input, PageHeader, Select, Spinner, Textarea } from '../components/ui'
+import { errorMessage, useConfirm, useToast } from '../lib/feedback'
 import { api, ApiError } from '../lib/api'
 import { fa, STATUS_LABEL } from '../lib/format'
 import type { Brand, Category, CategoryAttribute, Product, ProductImage, ProductStatus, SpecValue, Variant } from '../lib/types'
@@ -57,6 +58,8 @@ function SpecInput({ attr, value, onChange }: { attr: CategoryAttribute; value: 
 
 function VariantRow({ variant, productId, canDelete }: { variant: Variant; productId: string; canDelete: boolean }) {
   const qc = useQueryClient()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [v, setV] = useState({ sku: variant.sku, name: variant.name, weightGrams: variant.weightGrams, isActive: variant.isActive })
   const [o, setO] = useState({
     price: variant.offer ? String(variant.offer.price / 10) : '',
@@ -91,8 +94,11 @@ function VariantRow({ variant, productId, canDelete }: { variant: Variant; produ
 
   const remove = useMutation({
     mutationFn: () => api.delete(`/api/admin/catalog/variants/${variant.id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['product', productId] }),
-    onError: (e) => alert((e as Error).message),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['product', productId] })
+      toast('تنوع حذف شد')
+    },
+    onError: (e) => toast(errorMessage(e), 'error'),
   })
 
   return (
@@ -114,7 +120,7 @@ function VariantRow({ variant, productId, canDelete }: { variant: Variant; produ
         <Checkbox label="قابل فروش" checked={o.isActive} onChange={(x) => setO({ ...o, isActive: x })} />
         {msg && <span className={`text-xs ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</span>}
         <div className="ms-auto flex gap-2">
-          {canDelete && <Button variant="danger" onClick={() => confirm('این تنوع حذف شود؟') && remove.mutate()}>حذف</Button>}
+          {canDelete && <Button variant="danger" onClick={async () => (await confirm({ title: 'حذف تنوع', message: `تنوع «${v.name}» و قیمت آن حذف می‌شود.`, confirmLabel: 'حذف', danger: true })) && remove.mutate()}>حذف</Button>}
           <Button onClick={() => { setMsg(null); save.mutate() }} disabled={save.isPending}>{save.isPending ? '...' : 'ذخیره تنوع و قیمت'}</Button>
         </div>
       </div>
@@ -127,6 +133,8 @@ export function ProductEditPage() {
   const isNew = !id
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const categories = useQuery({ queryKey: ['categories'], queryFn: () => api.get<Category[]>('/api/admin/catalog/categories') })
   const brands = useQuery({ queryKey: ['brands'], queryFn: () => api.get<Brand[]>('/api/admin/catalog/brands') })
@@ -155,6 +163,7 @@ export function ProductEditPage() {
     onSuccess: (p) => {
       setFormError(null)
       setSaved(true)
+      toast(isNew ? 'کالا ساخته شد' : 'تغییرات کالا ذخیره شد')
       qc.setQueryData(['product', p.id], p)
       void qc.invalidateQueries({ queryKey: ['products'] })
       if (isNew) navigate(`/products/${p.id}`, { replace: true })
@@ -166,14 +175,16 @@ export function ProductEditPage() {
     mutationFn: () => api.delete(`/api/admin/catalog/products/${id}`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['products'] })
+      toast('کالا بایگانی شد')
       navigate('/products')
     },
+    onError: (e) => toast(errorMessage(e), 'error'),
   })
 
   const addVariant = useMutation({
     mutationFn: () => api.post<Variant>(`/api/admin/catalog/products/${id}/variants`, { name: `مدل ${fa((product.data?.variants.length ?? 0) + 1)}`, weightGrams: 0, isActive: true, sortOrder: product.data?.variants.length ?? 0 }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['product', id] }),
-    onError: (e) => alert((e as Error).message),
+    onError: (e) => toast(errorMessage(e), 'error'),
   })
 
   if (!isNew && product.isLoading) return <Spinner />
@@ -189,7 +200,7 @@ export function ProductEditPage() {
           <>
             <Link to="/products"><Button variant="secondary">بازگشت</Button></Link>
             {!isNew && form.status !== 'Archived' && (
-              <Button variant="danger" onClick={() => confirm('کالا بایگانی شود؟') && archive.mutate()}>بایگانی</Button>
+              <Button variant="danger" onClick={async () => (await confirm({ title: 'بایگانی کالا', message: 'کالا از فروشگاه برداشته می‌شود ولی اطلاعاتش باقی می‌ماند.', confirmLabel: 'بایگانی', danger: true })) && archive.mutate()}>بایگانی</Button>
             )}
           </>
         }

@@ -1,7 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { PlusIcon, SearchIcon } from '../components/Icons'
 import { Badge, Button, Card, Empty, ErrorText, Input, PageHeader, Pagination, Select, Spinner } from '../components/ui'
+import { tableClass as t } from '../lib/table'
 import { api, mediaUrl } from '../lib/api'
 import { date, fa, STATUS_LABEL, toman } from '../lib/format'
 import type { Category, Paged, ProductRow } from '../lib/types'
@@ -28,7 +30,7 @@ export function ProductsPage() {
 
   return (
     <>
-      <PageHeader title="کالاها" actions={<Button onClick={() => navigate('/products/new')}>کالای جدید</Button>} />
+      <PageHeader title="کالاها" subtitle={data ? `${fa(data.total)} کالا در کاتالوگ` : undefined} actions={<Button onClick={() => navigate('/products/new')}><PlusIcon className="size-4" /> کالای جدید</Button>} />
       <Card className="mb-4">
         <form
           className="grid gap-3 sm:grid-cols-[1fr_200px_160px_auto]"
@@ -38,7 +40,10 @@ export function ProductsPage() {
             setSearch(q.trim())
           }}
         >
-          <Input placeholder="جست‌وجوی عنوان یا SKU" value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute inset-y-0 start-3 my-auto size-[18px] text-muted" />
+            <Input className="ps-10" placeholder="جست‌وجوی عنوان یا SKU" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
           <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1) }}>
             <option value="">همه دسته‌ها</option>
             {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -58,37 +63,37 @@ export function ProductsPage() {
       ) : !data?.items.length ? (
         <Empty>کالایی پیدا نشد.</Empty>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-white">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-canvas text-xs text-muted">
+        <div className={t.wrap}>
+          <table className={`${t.table} min-w-[760px]`}>
+            <thead className={t.head}>
               <tr>
-                <th className="p-3 text-start font-medium">کالا</th>
-                <th className="p-3 text-start font-medium">دسته</th>
-                <th className="p-3 text-start font-medium">قیمت</th>
-                <th className="p-3 text-start font-medium">موجودی</th>
-                <th className="p-3 text-start font-medium">وضعیت</th>
-                <th className="p-3 text-start font-medium">آخرین تغییر</th>
+                <th className={t.th}>کالا</th>
+                <th className={t.th}>دسته</th>
+                <th className={t.th}>قیمت</th>
+                <th className={t.th}>موجودی</th>
+                <th className={t.th}>وضعیت</th>
+                <th className={t.th}>آخرین تغییر</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {data.items.map((p) => (
-                <tr key={p.id} className="hover:bg-canvas/60">
-                  <td className="p-3">
+                <tr key={p.id} className={t.row}>
+                  <td className={`${t.td}`}>
                     <Link to={`/products/${p.id}`} className="flex items-center gap-3">
-                      {p.imageUrl ? <img src={mediaUrl(p.imageUrl) ?? ''} alt="" className="size-10 rounded-md border border-line object-contain" /> : <div className="size-10 rounded-md bg-canvas" />}
+                      {p.imageUrl ? <img src={mediaUrl(p.imageUrl) ?? ''} alt="" className="size-11 rounded-xl border border-line bg-white object-contain p-0.5" /> : <div className="size-11 rounded-xl bg-canvas" />}
                       <div>
-                        <p className="font-medium hover:text-brand">{p.title}</p>
+                        <p className="font-bold hover:text-brand">{p.title}</p>
                         <p className="text-xs text-muted">{p.brandName ?? 'بدون برند'}، {fa(p.variantCount)} تنوع</p>
                       </div>
                     </Link>
                   </td>
-                  <td className="p-3 text-muted">{p.categoryName}</td>
-                  <td className="p-3">{p.minPrice ? toman(p.minPrice) : <span className="text-muted">ثبت نشده</span>}</td>
-                  <td className="p-3">{p.totalStock > 0 ? fa(p.totalStock) : <Badge tone="red">ناموجود</Badge>}</td>
-                  <td className="p-3">
+                  <td className={`${t.td} text-muted`}>{p.categoryName}</td>
+                  <td className={`${t.td}`}>{p.minPrice ? toman(p.minPrice) : <span className="text-muted">ثبت نشده</span>}</td>
+                  <td className={`${t.td}`}>{p.totalStock > 0 ? fa(p.totalStock) : <Badge tone="red">ناموجود</Badge>}</td>
+                  <td className={`${t.td}`}>
                     <Badge tone={p.status === 'Published' ? 'green' : p.status === 'Draft' ? 'amber' : 'gray'}>{STATUS_LABEL[p.status]}</Badge>
                   </td>
-                  <td className="p-3 text-xs text-muted">{date(p.updatedAt)}</td>
+                  <td className={`${t.td} text-xs text-muted`}>{date(p.updatedAt)}</td>
                 </tr>
               ))}
             </tbody>

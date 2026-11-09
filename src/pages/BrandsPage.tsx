@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { ImageUpload, Thumb } from '../components/ImageUpload'
 import { Badge, Button, Card, Checkbox, Empty, ErrorText, Field, Input, Modal, PageHeader, Spinner, Textarea } from '../components/ui'
 import { api, ApiError } from '../lib/api'
+import { errorMessage, useConfirm, useToast } from '../lib/feedback'
 import type { Brand } from '../lib/types'
 
 type Form = Omit<Brand, 'id'>
@@ -10,6 +11,8 @@ const blank: Form = { name: '', englishName: '', slug: '', logoUrl: null, descri
 
 export function BrandsPage() {
   const qc = useQueryClient()
+  const toast = useToast()
+  const confirm = useConfirm()
   const { data, isLoading, error } = useQuery({ queryKey: ['brands'], queryFn: () => api.get<Brand[]>('/api/admin/catalog/brands') })
   const [editing, setEditing] = useState<{ id: string | null; form: Form } | null>(null)
   const [formError, setFormError] = useState<ApiError | null>(null)
@@ -19,6 +22,7 @@ export function BrandsPage() {
       e.id ? api.put<Brand>(`/api/admin/catalog/brands/${e.id}`, e.form) : api.post<Brand>('/api/admin/catalog/brands', e.form),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['brands'] })
+      toast('برند ذخیره شد')
       setEditing(null)
     },
     onError: (e) => setFormError(e as ApiError),
@@ -26,8 +30,11 @@ export function BrandsPage() {
 
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/api/admin/catalog/brands/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['brands'] }),
-    onError: (e) => alert((e as Error).message),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['brands'] })
+      toast('برند حذف شد')
+    },
+    onError: (e) => toast(errorMessage(e), 'error'),
   })
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setEditing((e) => (e ? { ...e, form: { ...e.form, [key]: value } } : e))
@@ -53,7 +60,7 @@ export function BrandsPage() {
                 </div>
                 {!b.isActive && <Badge tone="red">غیرفعال</Badge>}
                 <Button variant="secondary" onClick={() => { setFormError(null); setEditing({ id: b.id, form: { ...b } }) }}>ویرایش</Button>
-                <Button variant="danger" onClick={() => confirm(`برند «${b.name}» حذف شود؟`) && remove.mutate(b.id)}>حذف</Button>
+                <Button variant="danger" onClick={async () => (await confirm({ title: `حذف برند «${b.name}»`, message: 'این کار قابل بازگشت نیست.', confirmLabel: 'حذف', danger: true })) && remove.mutate(b.id)}>حذف</Button>
               </li>
             ))}
           </ul>

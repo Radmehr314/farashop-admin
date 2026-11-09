@@ -41,7 +41,7 @@ export function ImageUpload({ onUploaded, label = 'افزودن تصویر', mul
 
 export function Thumb({ url, onRemove, size = 'size-24' }: { url: string; onRemove?: () => void; size?: string }) {
   return (
-    <div className={`group relative ${size} overflow-hidden rounded-lg border border-line bg-canvas`}>
+    <div className={`group relative ${size} overflow-hidden rounded-xl border border-line bg-white`}>
       <img src={mediaUrl(url) ?? ''} alt="" className="size-full object-contain" />
       {onRemove && (
         <button

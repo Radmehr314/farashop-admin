@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { ImageUpload, Thumb } from '../components/ImageUpload'
 import { Badge, Button, Card, Checkbox, Empty, ErrorText, Field, Input, Modal, PageHeader, Select, Spinner, Textarea } from '../components/ui'
 import { api, ApiError } from '../lib/api'
+import { errorMessage, useConfirm, useToast } from '../lib/feedback'
 import { fa } from '../lib/format'
 import type { AttributeType, Category, CategoryAttribute } from '../lib/types'
 
@@ -75,6 +76,8 @@ function AttributeEditor({ value, onChange }: { value: CategoryAttribute[]; onCh
 
 export function CategoriesPage() {
   const qc = useQueryClient()
+  const toast = useToast()
+  const confirm = useConfirm()
   const { data, isLoading, error } = useQuery({ queryKey: ['categories'], queryFn: () => api.get<Category[]>('/api/admin/catalog/categories') })
   const [editing, setEditing] = useState<{ id: string | null; form: Form } | null>(null)
   const [formError, setFormError] = useState<ApiError | null>(null)
@@ -86,6 +89,7 @@ export function CategoriesPage() {
       e.id ? api.put<Category>(`/api/admin/catalog/categories/${e.id}`, e.form) : api.post<Category>('/api/admin/catalog/categories', e.form),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['categories'] })
+      toast('دسته ذخیره شد')
       setEditing(null)
     },
     onError: (e) => setFormError(e as ApiError),
@@ -93,8 +97,11 @@ export function CategoriesPage() {
 
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/api/admin/catalog/categories/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
-    onError: (e) => alert((e as Error).message),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['categories'] })
+      toast('دسته حذف شد')
+    },
+    onError: (e) => toast(errorMessage(e), 'error'),
   })
 
   const open = (c?: Category, parentId?: string) => {
@@ -129,7 +136,7 @@ export function CategoriesPage() {
                 {!c.isActive && <Badge tone="red">غیرفعال</Badge>}
                 <Button variant="ghost" onClick={() => open(undefined, c.id)}>زیردسته</Button>
                 <Button variant="secondary" onClick={() => open(c)}>ویرایش</Button>
-                <Button variant="danger" onClick={() => confirm(`دسته «${c.name}» حذف شود؟`) && remove.mutate(c.id)}>حذف</Button>
+                <Button variant="danger" onClick={async () => (await confirm({ title: `حذف دسته «${c.name}»`, message: 'این کار قابل بازگشت نیست.', confirmLabel: 'حذف', danger: true })) && remove.mutate(c.id)}>حذف</Button>
               </li>
             ))}
           </ul>
