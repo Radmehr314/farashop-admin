@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", system-ui, sans-serif;
+  --color-brand: #0a5bd3;
+  --color-brand-strong: #0847a6;
+  --color-brand-soft: #e8f0fd;
+  --color-ink: #16202e;
+  --color-muted: #5d6b7e;
+  --color-line: #e3e7ed;
+  --color-canvas: #f4f6f9;
+  --color-danger: #c8322b;
+  --color-success: #12805c;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
