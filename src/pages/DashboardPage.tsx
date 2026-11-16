@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ComponentType, type SVGProps } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { BoxIcon, CheckIcon, FolderIcon, PlusIcon, TagIcon, UsersIcon } from '../components/Icons'
+import { BoxIcon, CheckIcon, FolderIcon, PlusIcon, ReceiptIcon, TagIcon, TruckIcon, UsersIcon } from '../components/Icons'
+import type { OrdersSummary } from '../lib/orders'
 import { Avatar, Badge, Button, Card, Skeleton } from '../components/ui'
 import { api, mediaUrl } from '../lib/api'
 import { displayName, fa, longDate, relative, ROLE_LABEL, STATUS_LABEL, toman } from '../lib/format'
@@ -11,6 +12,13 @@ import { useSession } from '../lib/useSession'
 
 const count = (path: string) => () => api.get<Paged<unknown>>(path).then((r) => r.total)
 
+const KPI_TONE = {
+  brand: { tile: 'bg-brand text-white shadow-[0_8px_18px_-8px_rgb(106_31_140/0.7)]', tag: 'bg-brand-soft text-brand', bar: 'bg-brand' },
+  sun: { tile: 'bg-sun text-night shadow-[0_8px_18px_-8px_rgb(245_179_1/0.8)]', tag: 'bg-sun-soft text-sun-ink', bar: 'bg-sun' },
+  blue: { tile: 'bg-blue text-white shadow-[0_8px_18px_-8px_rgb(37_99_201/0.7)]', tag: 'bg-violet-soft text-violet-ink', bar: 'bg-blue' },
+  sale: { tile: 'bg-sale text-white shadow-[0_8px_18px_-8px_rgb(228_87_46/0.7)]', tag: 'bg-sale-soft text-sale', bar: 'bg-sale' },
+}
+
 function Kpi({ label, tag, value, sub, to, icon: Icon, tone }: {
   label: string
   tag: string
@@ -18,18 +26,20 @@ function Kpi({ label, tag, value, sub, to, icon: Icon, tone }: {
   sub?: string
   to: string
   icon: ComponentType<SVGProps<SVGSVGElement>>
-  tone: string
+  tone: keyof typeof KPI_TONE
 }) {
+  const t = KPI_TONE[tone]
   return (
     <Link to={to} className="group relative overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-brand/30">
+      <span className={`absolute inset-x-0 top-0 h-1 ${t.bar}`} />
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className={`grid size-11 place-items-center rounded-xl ${tone}`}>
+          <span className={`grid size-11 place-items-center rounded-xl ${t.tile}`}>
             <Icon className="size-[22px]" />
           </span>
-          <p className="text-sm font-bold text-ink/80">{label}</p>
+          <p className="text-sm font-bold text-ink">{label}</p>
         </div>
-        <span className={`ltr rounded-lg px-2 py-0.5 text-[10px] font-black tracking-wide ${tone}`}>{tag}</span>
+        <span className={`ltr rounded-lg px-2 py-0.5 text-[10px] font-black tracking-wide ${t.tag}`}>{tag}</span>
       </div>
       {value === undefined ? <Skeleton className="mt-5 h-9 w-20" /> : <p className="mt-5 text-[34px] leading-none font-black">{fa(value)}</p>}
       <p className="mt-2 h-4 text-xs text-muted">{sub}</p>
@@ -114,6 +124,7 @@ export function DashboardPage() {
   const users = useQuery({ queryKey: ['users', 'count'], queryFn: count('/api/admin/users?pageSize=1') })
   const staff = useQuery({ queryKey: ['users', 'count', 'staff'], queryFn: count('/api/admin/users?pageSize=1&staff=true') })
   const recentProducts = useQuery({ queryKey: ['products', 'recent'], queryFn: () => api.get<Paged<ProductRow>>('/api/admin/catalog/products?pageSize=6') })
+  const orders = useQuery({ queryKey: ['orders-summary'], queryFn: () => api.get<OrdersSummary>('/api/admin/orders/summary') })
   const recentUsers = useQuery({ queryKey: ['users', 'recent'], queryFn: () => api.get<Paged<User>>('/api/admin/users?pageSize=6') })
 
   const name = session ? displayName(session.user) : ''
@@ -147,10 +158,17 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="کالاها" tag="Products" value={products.data} sub={published.data !== undefined ? `${fa(published.data)} کالای منتشرشده` : undefined} to="/products" icon={BoxIcon} tone="bg-brand-soft text-brand" />
-        <Kpi label="دسته‌بندی‌ها" tag="Categories" value={categories.data?.length} sub={categories.data ? `${fa(leafCategories.length)} دسته‌ی نهایی` : undefined} to="/categories" icon={FolderIcon} tone="bg-sun-soft text-sun-ink" />
-        <Kpi label="برندها" tag="Brands" value={brands.data?.length} sub={brands.data ? `${fa(brands.data.filter((b) => b.isActive).length)} برند فعال` : undefined} to="/brands" icon={TagIcon} tone="bg-sale-soft text-sale" />
-        <Kpi label="کاربران" tag="Users" value={users.data} sub={staff.data !== undefined ? `${fa(staff.data)} نفر از کارکنان` : undefined} to="/users" icon={UsersIcon} tone="bg-violet-soft text-violet-ink" />
+        <Kpi label="سفارش‌های امروز" tag="Today" value={orders.data?.todayCount} sub={orders.data ? toman(orders.data.todayTotal) : undefined} to="/orders" icon={ReceiptIcon} tone="brand" />
+        <Kpi label="در انتظار تایید پرداخت" tag="Payment" value={orders.data?.byStatus.AwaitingPayment} sub="بررسی واریزها" to="/orders?status=AwaitingPayment" icon={ReceiptIcon} tone="sun" />
+        <Kpi label="آماده‌سازی" tag="Fulfil" value={orders.data ? orders.data.byStatus.Paid + orders.data.byStatus.Processing : undefined} sub={orders.data ? `${fa(orders.data.byStatus.Paid)} پرداخت‌شده منتظر شروع` : undefined} to="/orders?status=Paid" icon={BoxIcon} tone="blue" />
+        <Kpi label="در راه" tag="Shipped" value={orders.data?.byStatus.Shipped} sub="ارسال‌شده، تحویل‌نشده" to="/orders?status=Shipped" icon={TruckIcon} tone="sale" />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kpi label="کالاها" tag="Products" value={products.data} sub={published.data !== undefined ? `${fa(published.data)} کالای منتشرشده` : undefined} to="/products" icon={BoxIcon} tone="brand" />
+        <Kpi label="دسته‌بندی‌ها" tag="Categories" value={categories.data?.length} sub={categories.data ? `${fa(leafCategories.length)} دسته‌ی نهایی` : undefined} to="/categories" icon={FolderIcon} tone="sun" />
+        <Kpi label="برندها" tag="Brands" value={brands.data?.length} sub={brands.data ? `${fa(brands.data.filter((b) => b.isActive).length)} برند فعال` : undefined} to="/brands" icon={TagIcon} tone="sale" />
+        <Kpi label="کاربران" tag="Users" value={users.data} sub={staff.data !== undefined ? `${fa(staff.data)} نفر از کارکنان` : undefined} to="/users" icon={UsersIcon} tone="blue" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">

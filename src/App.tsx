@@ -9,6 +9,10 @@ import { BrandsPage } from './pages/BrandsPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { OrderDetailPage } from './pages/OrderDetailPage'
+import { OrdersPage } from './pages/OrdersPage'
+import { InvoicePrintPage, ShippingLabelPage } from './pages/PrintPages'
+import { ShippingSettingsPage } from './pages/ShippingSettingsPage'
 import { ProductEditPage } from './pages/ProductEditPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { UsersPage } from './pages/UsersPage'
@@ -39,6 +43,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/orders/:id/invoice" element={<Protected><InvoicePrintPage /></Protected>} />
+      <Route path="/orders/:id/label" element={<Protected><ShippingLabelPage /></Protected>} />
       <Route
         element={
           <Protected>
@@ -49,6 +55,9 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="brands" element={<BrandsPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:id" element={<OrderDetailPage />} />
+        <Route path="settings/shipping" element={<ShippingSettingsPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/new" element={<ProductEditPage />} />
         <Route path="products/:id" element={<ProductEditPage />} />

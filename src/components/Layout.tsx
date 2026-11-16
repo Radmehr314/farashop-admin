@@ -4,7 +4,7 @@ import { logout, STORE_URL } from '../lib/api'
 import { displayName, ROLE_LABEL } from '../lib/format'
 import { setTheme, useTheme } from '../lib/theme'
 import { useSession } from '../lib/useSession'
-import { BoxIcon, CloseIcon, DashboardIcon, FolderIcon, LogoutIcon, MenuIcon, MoonIcon, PanelIcon, ShieldIcon, StoreIcon, SunIcon, TagIcon, UsersIcon } from './Icons'
+import { BoxIcon, CloseIcon, DashboardIcon, FolderIcon, LogoutIcon, MenuIcon, MoonIcon, PanelIcon, ReceiptIcon, ShieldIcon, StoreIcon, SunIcon, TagIcon, TruckIcon, UsersIcon } from './Icons'
 import { Logo } from './Logo'
 import { Avatar } from './ui'
 
@@ -12,6 +12,13 @@ type Item = { to: string; label: string; icon: ComponentType<SVGProps<SVGSVGElem
 
 const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'نمای کلی', items: [{ to: '/', label: 'داشبورد', icon: DashboardIcon, end: true }] },
+  {
+    title: 'فروش',
+    items: [
+      { to: '/orders', label: 'سفارش‌ها', icon: ReceiptIcon },
+      { to: '/settings/shipping', label: 'روش‌های ارسال', icon: TruckIcon },
+    ],
+  },
   {
     title: 'کاتالوگ',
     items: [
@@ -24,9 +31,12 @@ const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'حساب', items: [{ to: '/account', label: 'حساب من و امنیت', icon: ShieldIcon }] },
 ]
 
-const SOON = ['سفارش‌ها', 'انبار و خرید', 'مالی', 'تنظیمات']
+const SOON = ['انبار و خرید', 'مالی', 'تنظیمات']
 
 const TITLES: [string, string][] = [
+  ['/orders/', 'جزئیات سفارش'],
+  ['/orders', 'سفارش‌ها'],
+  ['/settings/shipping', 'روش‌های ارسال'],
   ['/products/new', 'کالای جدید'],
   ['/products/', 'ویرایش کالا'],
   ['/products', 'کالاها'],
@@ -51,15 +61,15 @@ function Sidebar({ collapsed = false, onNavigate }: { collapsed?: boolean; onNav
   const roles = session?.user.roles.filter((r) => r !== 'Customer').map((r) => ROLE_LABEL[r] ?? r).join('، ')
 
   return (
-    <div className="flex h-full flex-col border-e border-line bg-surface">
-      <Link to="/" onClick={onNavigate} className={`flex h-[72px] shrink-0 items-center border-b border-line ${collapsed ? 'justify-center' : 'px-5'}`}>
-        <Logo compact={collapsed} />
+    <div className="flex h-full flex-col bg-night bg-[radial-gradient(120%_60%_at_100%_0%,rgb(122_45_158/0.45),transparent_60%)] text-white">
+      <Link to="/" onClick={onNavigate} className={`flex h-[72px] shrink-0 items-center border-b border-white/10 ${collapsed ? 'justify-center' : 'px-5'}`}>
+        <Logo compact={collapsed} tone="light" />
       </Link>
 
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
         {GROUPS.map((g) => (
           <div key={g.title}>
-            {collapsed ? <div className="mx-3 mb-2 h-px bg-line" /> : <p className="px-3 pb-2 text-[11px] font-bold text-muted/80">{g.title}</p>}
+            {collapsed ? <div className="mx-3 mb-2 h-px bg-white/10" /> : <p className="px-3 pb-2 text-[11px] font-bold text-white/45">{g.title}</p>}
             <div className="space-y-1">
               {g.items.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
@@ -70,7 +80,7 @@ function Sidebar({ collapsed = false, onNavigate }: { collapsed?: boolean; onNav
                   onClick={onNavigate}
                   className={({ isActive }) =>
                     `flex h-11 items-center gap-3 rounded-xl text-sm transition ${collapsed ? 'justify-center' : 'px-3'} ${
-                      isActive ? 'bg-brand-soft font-bold text-brand' : 'text-ink/75 hover:bg-surface-2 hover:text-ink'
+                      isActive ? 'bg-gradient-to-l from-[#8a35b5] to-[#6a1f8c] font-bold text-white shadow-[0_8px_20px_-8px_rgb(138_53_181/0.8)]' : 'text-white/75 hover:bg-white/10 hover:text-white'
                     }`
                   }
                 >
@@ -83,11 +93,11 @@ function Sidebar({ collapsed = false, onNavigate }: { collapsed?: boolean; onNav
         ))}
         {!collapsed && (
           <div>
-            <p className="px-3 pb-2 text-[11px] font-bold text-muted/80">به‌زودی</p>
+            <p className="px-3 pb-2 text-[11px] font-bold text-white/45">به‌زودی</p>
             {SOON.map((s) => (
-              <span key={s} className="flex h-10 cursor-default items-center justify-between px-3 text-sm text-muted/60">
+              <span key={s} className="flex h-10 cursor-default items-center justify-between px-3 text-sm text-white/40">
                 {s}
-                <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold">به‌زودی</span>
+                <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-white/60">به‌زودی</span>
               </span>
             ))}
           </div>
@@ -95,8 +105,8 @@ function Sidebar({ collapsed = false, onNavigate }: { collapsed?: boolean; onNav
       </nav>
 
       {!collapsed && roles && (
-        <div className="border-t border-line px-5 py-4 text-xs text-muted">
-          نقش: <span className="font-bold text-ink">{roles}</span>
+        <div className="border-t border-white/10 px-5 py-4 text-xs text-white/55">
+          نقش: <span className="font-bold text-sun">{roles}</span>
         </div>
       )}
     </div>
@@ -146,7 +156,7 @@ export function Layout() {
           <div className="absolute inset-0 bg-night/50 backdrop-blur-[2px]" onClick={() => setDrawer(false)} />
           <div className="animate-toast absolute inset-y-0 start-0 w-[280px] shadow-2xl">
             <Sidebar onNavigate={() => setDrawer(false)} />
-            <button type="button" aria-label="بستن منو" onClick={() => setDrawer(false)} className="absolute top-4 end-3 grid size-10 place-items-center rounded-xl text-muted hover:bg-surface-2">
+            <button type="button" aria-label="بستن منو" onClick={() => setDrawer(false)} className="absolute top-4 end-3 grid size-10 place-items-center rounded-xl text-white/70 hover:bg-white/10">
               <CloseIcon className="size-5" />
             </button>
           </div>
