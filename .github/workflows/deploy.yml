@@ -17,12 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      VITE_API_URL: ${{ vars.API_URL }}
-      VITE_STORE_URL: ${{ vars.SITE_URL }}
+      VITE_API_URL: http://api.farashop.com
+      VITE_STORE_URL: http://farashop.com
     steps:
-      - name: Check variables
-        run: test -n "$VITE_API_URL" && test -n "$VITE_STORE_URL" || { echo "Set API_URL and SITE_URL repository variables" >&2; exit 1; }
-
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
