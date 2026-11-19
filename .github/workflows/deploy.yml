@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      VITE_API_URL: http://api.farashop.com
-      VITE_STORE_URL: http://farashop.com
+      VITE_API_URL: https://api.farashop.com
+      VITE_STORE_URL: https://farashop.com
     steps:
       - uses: actions/checkout@v4
 
